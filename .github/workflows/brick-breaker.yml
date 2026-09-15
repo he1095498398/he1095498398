@@ -1,0 +1,35 @@
+name: Generate Brick Breaker          # 任务名，会显示在 Actions 页面
+
+on:                                   # 什么时候运行
+  schedule:
+    - cron: "0 * * * *"               # 每小时整点跑一次
+  push:
+    branches:
+      - main                          # 你往 main 推送时也跑一次
+  workflow_dispatch:                  # 允许在网页上手动点按钮运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest            # 用 GitHub 的 Linux 云机器跑
+    permissions:
+      contents: write                 # 允许把生成的图写回仓库
+    steps:
+      - uses: actions/checkout@v4     # ① 把你的仓库下载到云机器上
+
+      - uses: MakdumIbrohim/generate-brick-breaker@main   # ② 生成动画
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}       # 不用改
+          github_user: ${{ github.repository_owner }}     # 自动填你的用户名，不用改
+          output_path: game.svg       # 想要 GIF 就改成 game.gif，README 里也跟着改
+          ball_skin: classic          # 球：classic / fire / ice / lightning / poison
+          theme: classic              # 背景：classic / sky / sky-night / synthwave / matrix / sakura
+          paddle_skin: classic        # 挡板：classic / laser / retro / mecha / cyber
+
+      - name: Commit and Push         # ③ 把新图存档并传回仓库
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: update brick breaker assets"
+          git pull --rebase --autostash origin main || true
+          git push origin main
